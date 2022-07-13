@@ -55,6 +55,8 @@
     </div>
 
     <div class="botones">
+        <button id="volver" class="btn btn-secondary" type="button" @click="goBack">Volver</button>
+
         <button id="boton1" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#exampleModal"><i
                 class="fa fa-info-circle"></i> | Information</button>
 
@@ -253,6 +255,14 @@ export default {
             } else {
                 this.score = 0;
             }
+        },
+        goBack() {
+            if (this.score == 230){
+                this.$router.push({ path: '/' });
+            }
+            else{
+                alert('Debes terminar la partida para regresar');
+            }
         }
     },
     created: async function () {
@@ -293,7 +303,7 @@ export default {
 }
 
 #boton1 {
-    margin-left: 1rem;
+    margin-left: 3rem;
     margin-top: 2rem;
 
 }
@@ -305,7 +315,12 @@ export default {
 
 #adivinar {
     margin-top: 1rem;
-    margin-left: 55rem;
+    margin-left: 47rem;
+}
+
+#volver {
+    margin-left: 1rem;
+    margin-top: 2rem;
 }
 
 .imagenlogo {
