@@ -63,6 +63,8 @@
         <button id="boton2" class="btn btn-primary" type="button" data-bs-toggle="offcanvas"
             data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Preguntas</button>
 
+        <button v-if="acabado" id="botonreset" type="button" class="btn btn-danger" @click="ResetGame">Reset</button>
+
         <form class="row g-3" id="adivinar" @submit.prevent="adivinarIntento">
             <div class="col-auto">
                 <label for="inputPassword2" class="visually-hidden"></label>
@@ -76,7 +78,7 @@
     </div>
 
     <div class="form-floating">
-        <div class="shadow-sm p-3 mb-5 bg-body rounded" id="resultado">Score: {{ this.score }}</div>
+        <div class="shadow-sm p-3 mb-5 bg-body rounded" id="resultado">Score: {{ this.auxiliarscore }}</div>
         <select name="preguntas" class="form-select" id="floatingSelect" aria-label="Floating label select example">
             <option selected></option>
             <option value="1">¿Es una variante de Rick?</option>
@@ -103,6 +105,48 @@
     </div>
     <div class="shadow-none p-3 mb-5 bg-light rounded" id="respuesta">{{ this.respuesta }}</div>
 
+    <div class="shadow-none p-3 mb-5 bg-light rounded" id="total">Total: {{ this.total }}</div>
+
+    <h3 v-if="this.acabado == 1">¡FELICIDADES HAS GANADO!<br>Tu puntuación: {{ this.auxiliarscore }}</h3>
+    <h3 v-if="this.acabado == 2">¡LO SIENTO HAS PERDIDO!</h3>
+    <br>
+    <br>
+    <br>
+
+    <div v-if="this.acabado == 0">
+        <div class="card" v-for="lista in arrayLista" :key="lista.identify">
+            <img :src="lista.imagen" alt="Avatar" style="width:100%" class="img-fluid">
+            <div class="container">
+                <h1 class="idpersonaje" v-text="'ID:' + lista.id"></h1>
+                <h4 class="nombredelpersonaje" v-text="lista.nombre"></h4>
+                <div class="estadopersonaje">
+                    <p v-if="lista.estado == 1">Estado: Vivo 🟢</p>
+                    <p v-else-if="lista.estado == 2">Estado: Muerto 🔴</p>
+                    <p v-else-if="lista.estado == 3">Estado: Desconocido ⚪</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="card2" v-for="personajeelegido in arrayEleccion" :key="personajeelegido.identify">
+        <img :src="personajeelegido.imagen" alt="Avatar2" style="width:100%" class="img-fluid2">
+        <div class="container2">
+            <h1 class="idpersonaje2" v-text="'ID:' + personajeelegido.id"></h1>
+            <h4 class="nombredelpersonaje2" v-text="personajeelegido.nombre"></h4>
+            <div class="estadopersonaje2">
+                <p v-if="personajeelegido.estado == 1">Estado: Vivo 🟢</p>
+                <p v-else-if="personajeelegido.estado == 2">Estado: Muerto 🔴</p>
+                <p v-else-if="personajeelegido.estado == 3">Estado: Desconocido ⚪</p>
+            </div>
+
+        </div>
+    </div>
+
+
+
+
+
 
 
 
@@ -110,6 +154,7 @@
 
 <script>
 import axios from 'axios';
+
 
 export default {
 
@@ -125,19 +170,37 @@ export default {
         seleccion: "",
         contador: 0,
         score: 230,
-        nombreadivina: ""
+        nombreadivina: "",
+        arrayEleccion: [],
+        acabado: 0,
+        auxiliarscore: 230,
+        arrayLista: [],
+        total: 0,
+        page: 0,
+        contadorpaginas: 0
 
     }),
     methods: {
         adivinarIntento() {
             this.contador = this.contador + 1;
-            if (this.contador != 5) {
-                if (this.nombreadivina == this.personaje.nombre) {
-                    alert('HAS GANADO');
-                    window.location.reload();
+            if (this.contador < 5 && this.acabado == 0) {
+                if (this.nombreadivina.toUpperCase() === this.personaje.nombre.toUpperCase()) {
+                    if (this.personaje.estado == "Alive") {
+                        this.personaje.estado = 1;
+                    }
+                    else if (this.personaje.estado == "Dead") {
+                        this.personaje.estado = 2;
+                    }
+                    else {
+                        this.personaje.estado = 3;
+                    }
+
+                    this.arrayEleccion.push(this.personaje);
+                    this.acabado = 1;
                 }
                 else {
                     this.score = this.score - 40;
+                    this.auxiliarscore = this.auxiliarscore - 40;
                 }
 
                 if (this.contador == 0) {
@@ -178,7 +241,7 @@ export default {
                 this.score = 0;
             }
         },
-        ShowSelected() {
+        async ShowSelected() {
             if (this.contador != 5) {
                 var value = document.getElementById("floatingSelect");
                 var combo = document.getElementById("floatingSelect");
@@ -189,47 +252,134 @@ export default {
                     if (this.personaje.nombre.includes("Rick")) {
                         this.respuesta = "Sí";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
+
+                        this.arrayLista.splice(0, this.total);
+
+                        let response1 = await axios.get("https://rickandmortyapi.com/api/character/?name=rick");
+                        this.resultado1 = response1.data;
+                        this.total = this.resultado1.info.count;
+                        this.page = this.resultado1.info.pages;
+                        console.log(this.page);
+
+                        for (let i = 1; i <= this.page; i++) {
+                            for (let j = 1; j < 20; j++) {
+                                var character = { id: this.resultado1.results[j].id, nombre: this.resultado1.results[j].name, imagen: this.resultado1.results[j].image, estado: this.resultado1.results[j].status };
+                                this.arrayLista.push(character);
+                            }
+                        }
+
                     } else {
                         this.respuesta = "No";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else if (number == 2) {
+
                     if (this.personaje.nombre.includes("Morty")) {
+
                         this.respuesta = "Sí";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
+
+                        this.arrayLista.splice(0, this.total);
+
+                        let response1 = await axios.get("https://rickandmortyapi.com/api/character/?name=morty");
+                        this.resultado1 = response1.data;
+                        this.total = this.resultado1.info.count;
+                        this.page = this.resultado1.info.pages;
+                        console.log(this.page);
+
+                        for (let i = 1; i <= this.page; i++) {
+                            for (let j = 1; j < 20; j++) {
+                                var character2 = { id: this.resultado1.results[j].id, nombre: this.resultado1.results[j].name, imagen: this.resultado1.results[j].image, estado: this.resultado1.results[j].status };
+                                this.arrayLista.push(character2);
+                            }
+                        }
+
                     } else {
                         this.respuesta = "No";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else if (number == 3) {
                     if (this.personaje.nombre.includes("Summer")) {
                         this.respuesta = "Sí";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
+
+                        this.arrayLista.splice(0, this.total);
+
+                        let response1 = await axios.get("https://rickandmortyapi.com/api/character/?name=summer");
+                        this.resultado1 = response1.data;
+                        this.total = this.resultado1.info.count;
+                        this.page = this.resultado1.info.pages;
+                        console.log(this.page);
+
+                        for (let i = 1; i <= this.page; i++) {
+                            for (let j = 1; j < 20; j++) {
+                                var character3 = { id: this.resultado1.results[j].id, nombre: this.resultado1.results[j].name, imagen: this.resultado1.results[j].image, estado: this.resultado1.results[j].status };
+                                this.arrayLista.push(character3);
+                            }
+                        }
+
                     } else {
                         this.respuesta = "No";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else if (number == 4) {
                     if (this.personaje.nombre.includes("Jerry")) {
                         this.respuesta = "Sí";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
+
+
+                        this.arrayLista.splice(0, this.total);
+
+                        let response1 = await axios.get("https://rickandmortyapi.com/api/character/?name=jerry");
+                        this.resultado1 = response1.data;
+                        this.total = this.resultado1.info.count;
+                        this.page = this.resultado1.info.pages;
+                        console.log(this.page);
+
+                        for (let i = 1; i <= this.page; i++) {
+                            for (let j = 1; j < 20; j++) {
+                                var character4 = { id: this.resultado1.results[j].id, nombre: this.resultado1.results[j].name, imagen: this.resultado1.results[j].image, estado: this.resultado1.results[j].status };
+                                this.arrayLista.push(character4);
+                            }
+                        }
+
                     } else {
                         this.respuesta = "No";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else if (number == 5) {
                     if (this.personaje.nombre.includes("Beth")) {
                         this.respuesta = "Sí";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
+
+                        this.arrayLista.splice(0, this.total);
+
+                        let response1 = await axios.get("https://rickandmortyapi.com/api/character/?name=beth");
+                        this.resultado1 = response1.data;
+                        this.total = this.resultado1.info.count;
+                        this.page = this.resultado1.info.pages;
+                        console.log(this.page);
+
+                        for (let i = 1; i <= this.page; i++) {
+                            for (let j = 1; j < 20; j++) {
+                                var character5 = { id: this.resultado1.results[j].id, nombre: this.resultado1.results[j].name, imagen: this.resultado1.results[j].image, estado: this.resultado1.results[j].status };
+                                this.arrayLista.push(character5);
+                            }
+                        }
                     } else {
                         this.respuesta = "No";
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else if (number == 6) {
                     if (!this.personaje.nombre.includes("Rick") && !this.personaje.nombre.includes("Morty") && !this.personaje.nombre.includes("Summer") && !this.personaje.nombre.includes("Jerry") && !this.personaje.nombre.includes("Beth")) {
                         this.respuesta = "Sí";
@@ -239,6 +389,7 @@ export default {
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else if (number == 7) {
                     if (this.personaje.estado.includes("Vivo")) {
                         this.respuesta = "Sí";
@@ -248,6 +399,7 @@ export default {
                         this.seleccion = { pregunta: selected, respuestas: this.respuesta };
                     }
                     this.score = this.score - 10;
+                    this.auxiliarscore = this.auxiliarscore - 10;
                 } else {
                     this.respuesta = "Por favor seleccione una pregunta";
                 }
@@ -257,40 +409,148 @@ export default {
             }
         },
         goBack() {
-            if (this.score == 230){
+            if (this.score == 230) {
                 this.$router.push({ path: '/' });
             }
-            else{
+            else {
                 alert('Debes terminar la partida para regresar');
             }
+        },
+        ResetGame() {
+            window.location.reload();
         }
     },
-    created: async function () {
-        var num = Math.floor(Math.random() * 824 + 1);
+    mounted: async function () {
+        var num = Math.floor(Math.random() * 826 + 1);
         console.log(num);
         let response = await axios.get("https://rickandmortyapi.com/api/character/" + num);
         this.result = response.data;
-        this.personaje = { id: this.result.id, nombre: this.result.name, imagen: this.result.image, estado: this.estado };
+        this.personaje = { id: this.result.id, nombre: this.result.name, imagen: this.result.image, estado: this.result.status };
         console.log(this.result.name);
+
+        let response1 = await axios.get("https://rickandmortyapi.com/api/character/");
+        this.resultado1 = response1.data;
+        this.total = this.resultado1.info.count;
+
+        for (let i = 1; i < this.total; i++) {
+            let response2 = await axios.get("https://rickandmortyapi.com/api/character/" + i);
+            this.resultado2 = response2.data;
+
+            var character = { id: this.resultado2.id, nombre: this.resultado2.name, imagen: this.resultado2.image, estado: this.resultado2.status };
+            this.arrayLista.push(character);
+        }
     },
     watch: {
         score() {
             if (this.score <= 0) {
-                this.score = 0;
-                alert('HAS PERDIDO');
-                window.location.reload();
+                if (this.personaje.estado == "Alive") {
+                    this.personaje.estado = 1;
+                }
+                else if (this.personaje.estado == "Dead") {
+                    this.personaje.estado = 2;
+                }
+                else {
+                    this.personaje.estado = 3;
+                }
+                if (this.acabado == 0) {
+                    this.acabado = 2;
+                    this.arrayEleccion.push(this.personaje);
+                }
             }
         }
     }
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .form-floating {
     margin-top: 4rem;
     margin-left: 23rem;
     width: 70rem;
 }
+
+.card {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    width: 20%;
+    border-radius: 5px;
+    display: inline-block;
+    margin: 20px;
+    margin-left: 3rem;
+}
+
+.card2 {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+    transition: 0.3s;
+    width: 20%;
+    border-radius: 5px;
+    display: inline-block;
+    margin: 20px;
+    margin-left: 49rem;
+}
+
+.card2:hover {
+    box-shadow: 0 8px 24px 0 rgba(152, 206, 76, 0.678);
+}
+
+.card:hover {
+    box-shadow: 0 8px 24px 0 rgba(152, 206, 76, 0.678);
+}
+
+img {
+    border-radius: 5px 5px 0 0;
+}
+
+.container2 {
+    padding: 2px 16px;
+    font-family: 'Hanalei Fill', cursive;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.container {
+    padding: 2px 16px;
+    font-family: 'Hanalei Fill', cursive;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.nombredelpersonaje {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.nombredelpersonaje2 {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.idpersonaje {
+    grid-column: 1;
+    grid-row: span 2;
+    justify-self: center;
+    place-self: center;
+}
+
+.idpersonaje2 {
+    grid-column: 1;
+    grid-row: span 2;
+    justify-self: center;
+    place-self: center;
+}
+
+.estadopersonaje {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.estadopersonaje2 {
+    grid-column: 2;
+    grid-row: 2;
+}
+
 
 .botones {
     display: inline-flex;
@@ -311,6 +571,12 @@ export default {
 #boton2 {
     margin-left: 3rem;
     margin-top: 2rem;
+}
+
+#botonreset {
+    margin-left: 3rem;
+    margin-top: 2rem;
+    padding: 10px;
 }
 
 #adivinar {
@@ -345,5 +611,25 @@ export default {
     text-align: center;
     font-weight: bold;
     border: 5px solid #2660cc;
+}
+
+#total {
+    margin-left: 23rem;
+    width: 10rem;
+    font-weight: bold;
+
+}
+
+@import url('https://fonts.googleapis.com/css?family=Sarpanch:900');
+
+h3 {
+    grid-area: text;
+    font-family: 'Sarpanch', sans-serif;
+    font-size: 10vmin;
+    margin: 0;
+    margin-left: 20rem;
+    padding: 30px;
+    color: #06aecc;
+    text-shadow: 0.5vmin 0.5vmin 0 #98ce4cad, -0.5vmin -0.5vmin 0 #95ff00f3;
 }
 </style>

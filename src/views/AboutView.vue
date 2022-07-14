@@ -107,7 +107,7 @@ export default {
 }
 
 .card:hover {
-  box-shadow: 0 8px 24px 0 rgba(152, 206, 76, 0.678);
+  box-shadow: 0 8px 24px 0 #98ce4cad;
 }
 
 img {
